@@ -7,7 +7,7 @@ public enum PlayerAnimationState { Idle, Walk, Attack, Damage, Dies }
 public class PlayerMovement : MonoBehaviour
 {
     private Animator _animator;
-    private BoxCollider _collier;
+    private BoxCollider _collider;
     private Rigidbody _rigidbody;
 
     private PlayerAnimationState _currentState;
@@ -18,11 +18,18 @@ public class PlayerMovement : MonoBehaviour
 
     private GameObject _currentEnemy;
 
+    [SerializeField]
+    private GameObject _bulletPrefab;
+    [SerializeField]
+    private Transform _bulletHolder;
+
+    private float _shotTimer = 0f;
+
     private void Awake()
     {
         _animator = GetComponent<Animator>();
         _rigidbody = GetComponent<Rigidbody>();
-        _collier = GetComponent<BoxCollider>();
+        _collider = GetComponent<BoxCollider>();
     }
 
     private void Start()
@@ -36,32 +43,39 @@ public class PlayerMovement : MonoBehaviour
         switch (_currentState)
         {
             case PlayerAnimationState.Idle:
-                if (_animator.GetCurrentAnimatorStateInfo(0).IsName("Idle")) return;
-
+                HandleIdleState();
                 break;
 
             case PlayerAnimationState.Walk:
-                Walk();
+                HandleWalkState();
                 break;
 
             case PlayerAnimationState.Attack:
-                AttackEnemy();
+                HandleAttackState();
                 break;
         }
     }
 
-    private void Walk()
+    private void HandleIdleState()
+    {
+        if (_animator.GetCurrentAnimatorStateInfo(0).IsName("Idle"))
+        {
+            // Handle idle state
+        }
+    }
+
+    private void HandleWalkState()
     {
         if (_animator.GetCurrentAnimatorStateInfo(0).IsName("Walk")) return;
 
         _animator.SetTrigger("isWalking");
 
-        SearchEnemy();
+        SearchForEnemy();
     }
 
-    private void SearchEnemy()
+    private void SearchForEnemy()
     {
-        Collider[] enemies = Physics.OverlapSphere(transform.position, 4f, _enemyLayer);
+        Collider[] enemies = Physics.OverlapSphere(transform.position, 50f, _enemyLayer);
 
         foreach (Collider enemy in enemies)
         {
@@ -71,24 +85,22 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    private void AttackEnemy()
+    private void HandleAttackState()
     {
         if (_animator.GetCurrentAnimatorStateInfo(0).IsName("Attack")) return;
+
         _animator.SetTrigger("isAttacking");
-        Debug.Log("Enemy Attacked");
-    }
 
+        if (_shotTimer > Time.deltaTime)
+            _shotTimer -= Time.deltaTime;
+        else
+        {
+            var bullet = Instantiate(_bulletPrefab, _bulletHolder.transform.position, Quaternion.identity);
+            bullet.GetComponent<Bullet>().LaunchBullet(_currentEnemy.transform);
+            _shotTimer = 1f;
+        }
 
-    private void OnAnimatorMove()
-    {
-        ChangePosition();
         UpdateRotation();
-    }
-
-    private void ChangePosition()
-    {
-        _position = _animator.rootPosition;
-        transform.position = _position;
     }
 
     private void UpdateRotation()
@@ -100,4 +112,14 @@ public class PlayerMovement : MonoBehaviour
         transform.rotation = rotation;
     }
 
+    private void OnAnimatorMove()
+    {
+        ChangePosition();
+    }
+
+    private void ChangePosition()
+    {
+        _position = _animator.rootPosition;
+        transform.position = _position;
+    }
 }
