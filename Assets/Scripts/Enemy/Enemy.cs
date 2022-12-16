@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 using static UnityEngine.GraphicsBuffer;
+using UnityEngine.UI;
 
 public enum EnemyState { Idle, WalkToPlayer, AttackPlayer, GetsDamage, Dies }
 
@@ -14,11 +14,25 @@ public class Enemy : MonoBehaviour
     private Rigidbody _rigidbody;
     private GameObject _player;
 
+    [SerializeField]
+    private Slider _healthSlider;
+
+    [SerializeField]
+    private Transform _cameraPos;
+
+    [SerializeField]
+    private GameObject _damageText;
+
+    [SerializeField]
+    private GameObject _canvas;
+
     private EnemyState _currentState;
+    private float _factor;
 
     private void Awake()
     {
-        _enemyHealth = Random.Range(50, 300);
+        _enemyHealth = Random.Range(150, 300);
+        _factor = 100 / _enemyHealth;
         _animator = GetComponent<Animator>();
         _rigidbody = GetComponent<Rigidbody>();
     }
@@ -26,6 +40,7 @@ public class Enemy : MonoBehaviour
     private void Start()
     {
         _player = GameObject.FindGameObjectWithTag("Player");
+        _cameraPos = GameObject.FindGameObjectWithTag("MainCamera").transform;
         _currentState = EnemyState.WalkToPlayer;
     }
 
@@ -41,22 +56,34 @@ public class Enemy : MonoBehaviour
 
     private void Update()
     {
-        switch (_currentState)
+        if (_player != null)
         {
-            case EnemyState.WalkToPlayer:
-                _animator.SetTrigger("isWalking");
-                break;
+            switch (_currentState)
+            {
+                case EnemyState.WalkToPlayer:
+                    _animator.SetTrigger("isWalking");
+                    break;
 
-            case EnemyState.AttackPlayer:
-                _animator.SetTrigger("isAttacking");
-                break;
-
+                case EnemyState.AttackPlayer:
+                    _animator.SetTrigger("isAttacking");
+                    break;
+            }
         }
+
+        // Rotate the health slider towards the camera
+        _healthSlider.transform.LookAt(_cameraPos.transform.position);
     }
 
     public void ApplyDamage(float damage)
     {
         _enemyHealth -= damage;
+
+        _healthSlider.value = (_enemyHealth / 100) * _factor;
+
+        var text = Instantiate(_damageText, new Vector3 (-0.303f, -0.33f, 0), Quaternion.identity);
+        text.transform.SetParent(_canvas.transform, false);
+        text.transform.localScale = new Vector3(0.01f, 0.01f, 1);
+        text.GetComponent<DamageText>().SetText(damage);
 
         if (_enemyHealth <= 0)
         {
@@ -71,8 +98,11 @@ public class Enemy : MonoBehaviour
 
     private void OnAnimatorMove()
     {
-        ChangePosition();
-        UpdateRotation();
+        if (_player != null)
+        {
+            ChangePosition();
+            UpdateRotation();
+        }
     }
 
     private void ChangePosition()

@@ -169,18 +169,15 @@ public class PlayerMovement : MonoBehaviour
         if (PlayerStats.PlayerHealth <= 0)
         {
             Destroy(gameObject);
-            ReloadLevel();
+            PlayerUI.Instance.DisplayreloadMenu();
         }
     }
 
-    private void ReloadLevel()
+    private void OnTriggerEnter(Collider other)
     {
-        PlayerStats.PlayerHealth = 1000f;
-        PlayerStats.CurrencyPoints = 0;
-        PlayerStats.PlayerCoolDown = 1f;
-        PlayerStats.PlayerResistence = 0f;
-        PlayerStats.PlayerDamage = 100;
-
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        if (other.tag == "EndPoint")
+        {
+            PlayerUI.Instance.DisplayreloadMenu();
+        }
     }
 }
