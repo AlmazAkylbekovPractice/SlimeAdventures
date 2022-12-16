@@ -16,6 +16,7 @@ public class PlayerMovement : MonoBehaviour
 
     private LayerMask _enemyLayer;
 
+    [SerializeField]
     private GameObject _currentEnemy;
 
     [SerializeField]
@@ -23,7 +24,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField]
     private Transform _bulletHolder;
 
-    private float _shotTimer = 0f;
+    private float _shotTimer;
+
+    [SerializeField]
+    private Transform targetPoint;
 
     private void Awake()
     {
@@ -36,6 +40,7 @@ public class PlayerMovement : MonoBehaviour
     {
         _enemyLayer = LayerMask.GetMask("Enemy");
         _currentState = PlayerAnimationState.Walk;
+        _shotTimer = PlayerStats.PlayerCoolDown;
     }
 
     private void Update()
@@ -75,7 +80,13 @@ public class PlayerMovement : MonoBehaviour
 
     private void SearchForEnemy()
     {
-        Collider[] enemies = Physics.OverlapSphere(transform.position, 50f, _enemyLayer);
+        Collider[] enemies = Physics.OverlapSphere(transform.position, 5f, _enemyLayer);
+
+        if (enemies.Length.Equals(0))
+        {
+            _currentEnemy = null;
+            return;
+        }
 
         foreach (Collider enemy in enemies)
         {
@@ -87,27 +98,50 @@ public class PlayerMovement : MonoBehaviour
 
     private void HandleAttackState()
     {
-        if (_animator.GetCurrentAnimatorStateInfo(0).IsName("Attack")) return;
+        if (_currentEnemy != null)
+        {
+            float distance = Vector3.Distance(transform.position, _currentEnemy.transform.position);
 
-        _animator.SetTrigger("isAttacking");
+            if (distance > 5f)
+            {
+                _currentEnemy = null;
+                SearchForEnemy();
+                return;
+            }
 
-        if (_shotTimer > Time.deltaTime)
-            _shotTimer -= Time.deltaTime;
+            if (_animator.GetCurrentAnimatorStateInfo(0).IsName("Attack")) return;
+
+            _animator.SetTrigger("isAttacking");
+
+            if (_shotTimer > Time.deltaTime)
+                _shotTimer -= Time.deltaTime;
+            else
+            {
+                var bullet = Instantiate(_bulletPrefab, _bulletHolder.transform.position, Quaternion.identity);
+                bullet.GetComponent<Bullet>().LaunchBullet(_currentEnemy.transform, PlayerStats.PlayerDamage);
+                _shotTimer = PlayerStats.PlayerCoolDown;
+            }
+
+            UpdateRotation();
+
+        }
         else
         {
-            var bullet = Instantiate(_bulletPrefab, _bulletHolder.transform.position, Quaternion.identity);
-            bullet.GetComponent<Bullet>().LaunchBullet(_currentEnemy.transform);
-            _shotTimer = 1f;
+            RotateTowardsTargetPoint();
+            _currentState = PlayerAnimationState.Walk;
         }
-
-        UpdateRotation();
     }
 
     private void UpdateRotation()
     {
-        if (_currentEnemy == null) return;
-
         var relativePos = _currentEnemy.transform.position - transform.position;
+        var rotation = Quaternion.LookRotation(relativePos, Vector3.up);
+        transform.rotation = rotation;
+    }
+
+    private void RotateTowardsTargetPoint()
+    {
+        var relativePos = targetPoint.transform.position - transform.position;
         var rotation = Quaternion.LookRotation(relativePos, Vector3.up);
         transform.rotation = rotation;
     }
@@ -121,5 +155,16 @@ public class PlayerMovement : MonoBehaviour
     {
         _position = _animator.rootPosition;
         transform.position = _position;
+    }
+
+    public void ApplyDamage(float damage)
+    {
+        damage -= PlayerStats.PlayerResistence;
+
+        PlayerStats.PlayerHealth -= damage;
+
+        Debug.Log(PlayerStats.PlayerHealth);
+
+        PlayerUI.Instance.UpdatePlayerHealth();
     }
 }

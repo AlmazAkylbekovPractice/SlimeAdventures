@@ -10,7 +10,8 @@ public class Bullet : MonoBehaviour
 
     private Transform _target;
 
-    private float _force = 1f;
+    private float _force = 2f;
+
     public float _damage;
 
     private void Awake()
@@ -19,12 +20,16 @@ public class Bullet : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody>();
     }
 
-    public void LaunchBullet(Transform targetPos)
+    public void LaunchBullet(Transform targetPos, float damage)
     {
         _target = targetPos;
+        _damage = damage;
 
         // Calculate the direction from the bullet to the target
-        Vector3 direction = targetPos.position - transform.position;
+        Vector3 direction = _target.position - transform.position;
+
+        // Add a vertical component to the direction vector
+        direction.y += Mathf.Sin(Time.time * 10f) * 0.5f; // This will cause the bullet to oscillate up and down as it moves
 
         // Normalize the direction to get a unit vector
         direction = direction.normalized;
@@ -52,6 +57,7 @@ public class Bullet : MonoBehaviour
     {
         if (collision.gameObject.CompareTag("Enemy"))
         {
+            collision.gameObject.GetComponent<Enemy>().ApplyDamage(_damage);
             Destroy(gameObject);
         }
     }
