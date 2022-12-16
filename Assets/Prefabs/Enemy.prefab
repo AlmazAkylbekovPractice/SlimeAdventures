@@ -261,8 +261,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3b1d8a25f8e94daba1c7f8ea90f8e12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentState: 0
-  enemyHealth: 1000
+  _enemyHealth: 100
 --- !u!95 &5404980919081296258
 Animator:
   serializedVersion: 4

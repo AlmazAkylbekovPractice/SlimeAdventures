@@ -18,7 +18,7 @@ public class Enemy : MonoBehaviour
 
     private void Awake()
     {
-        _enemyHealth = Random.Range(100, 300);
+        _enemyHealth = Random.Range(50, 200);
         _animator = GetComponent<Animator>();
         _rigidbody = GetComponent<Rigidbody>();
     }
