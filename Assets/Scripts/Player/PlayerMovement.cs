@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public enum PlayerAnimationState { Idle, Walk, Attack, Damage, Dies }
 
@@ -163,8 +164,23 @@ public class PlayerMovement : MonoBehaviour
 
         PlayerStats.PlayerHealth -= damage;
 
-        Debug.Log(PlayerStats.PlayerHealth);
-
         PlayerUI.Instance.UpdatePlayerHealth();
+
+        if (PlayerStats.PlayerHealth <= 0)
+        {
+            Destroy(gameObject);
+            ReloadLevel();
+        }
+    }
+
+    private void ReloadLevel()
+    {
+        PlayerStats.PlayerHealth = 1000f;
+        PlayerStats.CurrencyPoints = 0;
+        PlayerStats.PlayerCoolDown = 1f;
+        PlayerStats.PlayerResistence = 0f;
+        PlayerStats.PlayerDamage = 100;
+
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
